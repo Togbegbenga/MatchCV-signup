@@ -1,0 +1,87 @@
+diff --git a/MatchCV/MatchCV/settings.py b/MatchCV/MatchCV/settings.py
+index 10a8f19..97b3972 100644
+--- a/MatchCV/MatchCV/settings.py
++++ b/MatchCV/MatchCV/settings.py
+@@ -38,6 +38,7 @@ INSTALLED_APPS = [
+     'django.contrib.sessions',
+     'django.contrib.messages',
+     'django.contrib.staticfiles',
++    'authenticar',
+ ]
+ 
+ MIDDLEWARE = [
+@@ -55,7 +56,7 @@ ROOT_URLCONF = 'MatchCV.urls'
+ TEMPLATES = [
+     {
+         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
++        'DIRS': [BASE_DIR.parent / 'templates'],
+         'APP_DIRS': True,
+         'OPTIONS': {
+             'context_processors': [
+@@ -124,3 +125,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+ # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
+ 
+ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
++
++
++LOGIN_REDIRECT_URL = '/'
+diff --git a/MatchCV/MatchCV/urls.py b/MatchCV/MatchCV/urls.py
+index 758c80c..20a144e 100644
+--- a/MatchCV/MatchCV/urls.py
++++ b/MatchCV/MatchCV/urls.py
+@@ -22,7 +22,7 @@ from django.urls import path, include
+ urlpatterns = [
+     path('admin/', admin.site.urls),
+     path('auth/', include('authenticar.urls')),
+-    path('core/', include('core.urls')),
++    path('core/', include('Core.urls')),
+ ]
+ 
+ urlpatterns = urlpatterns + static(settings.MEDIA_URL, 
+diff --git a/MatchCV/authenticar/urls.py b/MatchCV/authenticar/urls.py
+index 3d7f6da..bccedd6 100644
+--- a/MatchCV/authenticar/urls.py
++++ b/MatchCV/authenticar/urls.py
+@@ -1,7 +1,7 @@
+ from django.urls import path
+ 
++from . import views
+ 
+ urlpatterns = [
+-
+-
+-]
+\ No newline at end of file
++    path("signup/", views.signup_view, name="signup"),
++]
+diff --git a/MatchCV/authenticar/views.py b/MatchCV/authenticar/views.py
+index 91ea44a..144dc8d 100644
+--- a/MatchCV/authenticar/views.py
++++ b/MatchCV/authenticar/views.py
+@@ -1,3 +1,23 @@
+-from django.shortcuts import render
++from django.conf import settings
++from django.contrib import messages
++from django.contrib.auth import login
++from django.shortcuts import redirect, render
+ 
+-# Create your views here.
++from .forms import SignUpForm
++
++
++def signup_view(request):
++    if request.user.is_authenticated:
++        return redirect(settings.LOGIN_REDIRECT_URL)
++
++    if request.method == "POST":
++        form = SignUpForm(request.POST)
++        if form.is_valid():
++            user = form.save()
++            login(request, user)
++            messages.success(request, "Account created successfully. Welcome to MatchCV!")
++            return redirect(settings.LOGIN_REDIRECT_URL)
++    else:
++        form = SignUpForm()
++
++    return render(request, "authenticar/signup.html", {"form": form})
